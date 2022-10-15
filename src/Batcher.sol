@@ -27,7 +27,7 @@ contract Batcher {
         }
         // update n
         n = oldN + _n;
-    } 
+    }
 
     function callback(address target, bytes memory data) external {
         require(msg.sender == original, "Only original can call this function.");

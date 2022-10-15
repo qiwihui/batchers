@@ -15,6 +15,18 @@ contract Storage {
     }
 }
 
+interface IERC20 {
+    function balanceOf(address owner) external view returns (uint256);
+}
+
+interface IXen {
+    function claimRank(uint256 term) external;
+
+    function claimMintReward() external;
+
+    function claimMintRewardAndShare(address other, uint256 pct) external;
+}
+
 contract BatcherTest is Test {
     Storage store;
     Batcher batcher;
@@ -27,8 +39,23 @@ contract BatcherTest is Test {
     function testCallExecute() public {
         assertEq(store.retrieve(), 0);
         batcher.increase(9);
-        bytes memory call= abi.encodeWithSelector(Storage.store.selector, 1);
+        bytes memory call = abi.encodeWithSelector(Storage.store.selector, 1);
         batcher.execute(0, 10, address(store), call);
         assertEq(store.retrieve(), 10);
+    }
+
+    function testXen() public {
+        vm.createSelectFork("mainnet", 15743623);
+        vm.warp(1665721472);
+        address xenAddress = 0x06450dEe7FD2Fb8E39061434BAbCFC05599a6Fb8;
+        IXen(xenAddress).claimRank(1);
+
+        vm.warp(1665721472 + 24 * 3600 + 1);
+        uint256 balanceBefore = IERC20(xenAddress).balanceOf(address(this));
+        console.log("Xen balance before: ", balanceBefore);
+        IXen(xenAddress).claimMintRewardAndShare(address(this), 100);
+        uint256 balanceAfter = IERC20(xenAddress).balanceOf(address(this));
+        console.log("Xen balance after: ", balanceAfter);
+        assertLt(balanceBefore, balanceAfter);
     }
 }
